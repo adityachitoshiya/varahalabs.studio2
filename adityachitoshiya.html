@@ -18,24 +18,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap');
 
         :root {
             --primary: #3b82f6;
             --accent: #a855f7;
             --dark: #050505;
+            --text-main: #e2e8f0;
+            --font-main: 'Space Grotesk', sans-serif;
+            --font-display: 'Syne', sans-serif;
+        }
+
+        /* HACKER MODE VARIABLES */
+        body.hacker-mode {
+            --primary: #00ff00 !important;
+            --accent: #008f11 !important;
+            --dark: #000000 !important;
+            --text-main: #00ff00 !important;
+            --font-main: 'Fira Code', monospace !important;
+            --font-display: 'Fira Code', monospace !important;
         }
 
         body {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: var(--font-main);
             background-color: var(--dark);
-            color: #e2e8f0;
+            color: var(--text-main);
             overflow-x: hidden;
             transition: background-color 0.5s ease, color 0.5s ease;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
         }
 
         body.hacker-mode * {
@@ -87,7 +96,7 @@
             border-radius: 10px;
         }
 
-        /* Custom Cursor */
+        /* --- CUSTOM CURSOR STYLES --- */
         .cursor-dot,
         .cursor-outline {
             position: fixed;
@@ -111,11 +120,11 @@
             width: 40px;
             height: 40px;
             border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.15s ease-out;
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
             mix-blend-mode: difference;
         }
 
-        @media (min-width: 1024px) {
+        @media (hover: hover) and (pointer: fine) {
             body {
                 cursor: none;
             }
@@ -346,7 +355,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #050505;
+            background-color: #000;
             z-index: 10000;
             display: flex;
             flex-direction: column;
@@ -386,16 +395,20 @@
         <div class="relative w-full h-full overflow-hidden">
             <!-- Sci-Fi Video Background -->
             <video autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-60">
+                <!-- Using a tech/abstract video placeholder -->
                 <source src="https://videos.pexels.com/video-files/3129671/3129671-uhd_2560_1440_30fps.mp4"
                     type="video/mp4">
             </video>
 
             <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 backdrop-blur-sm">
-                <i data-lucide="hexagon" class="w-20 h-20 text-blue-500 animate-spin-slow mb-6 fill-blue-500/10"></i>
-                <h2 class="text-4xl font-black text-white tracking-[0.5em] display-font animate-pulse mb-2">ADITYA</h2>
-                <p class="text-blue-400 font-mono text-xs uppercase tracking-widest">System Initializing...</p>
+                <i data-lucide="hexagon"
+                    class="w-16 h-16 md:w-20 md:h-20 text-blue-500 animate-spin-slow mb-6 fill-blue-500/10"></i>
+                <h2 class="text-3xl md:text-4xl font-black text-white tracking-[0.5em] display-font animate-pulse mb-2">
+                    ADITYA</h2>
+                <p class="text-blue-400 font-mono text-[10px] md:text-xs uppercase tracking-widest">System
+                    Initializing...</p>
 
-                <div class="mt-8 w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+                <div class="mt-8 w-48 md:w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 animate-[width_3s_ease-in-out_forwards]"
                         style="width: 0%; animation-fill-mode: forwards;"></div>
                 </div>
@@ -420,6 +433,7 @@
                     class="text-blue-500">.</span>CC
             </a>
 
+            <!-- Desktop Menu -->
             <div class="hidden md:flex gap-8 text-xs font-medium tracking-wider uppercase">
                 <a href="#about"
                     class="hover-trigger opacity-70 hover:opacity-100 transition-opacity hover:text-blue-400 cursor-none">Profile</a>
@@ -430,29 +444,48 @@
                     class="hover-trigger opacity-70 hover:opacity-100 transition-opacity hover:text-blue-400 cursor-none">Credentials</a>
             </div>
 
+            <!-- Desktop CTA -->
             <a href="mailto:adityachitoshiya12@gmail.com"
-                class="px-5 py-2 border border-white/20 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors hover-trigger bg-white/5 backdrop-blur-md cursor-none">
+                class="hidden md:block px-5 py-2 border border-white/20 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors hover-trigger bg-white/5 backdrop-blur-md cursor-none">
                 Let's Talk
             </a>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-white p-2">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu Panel (Hidden by default) -->
+        <div id="mobile-menu"
+            class="hidden md:hidden absolute top-full left-0 w-full bg-black/95 backdrop-blur-xl border-b border-white/10">
+            <div class="flex flex-col p-6 gap-6 text-sm font-medium uppercase tracking-wider">
+                <a href="#about" class="mobile-link hover:text-blue-400">Profile</a>
+                <a href="#missions" class="mobile-link hover:text-blue-400">Missions</a>
+                <a href="#skills" class="mobile-link hover:text-blue-400">Intel</a>
+                <a href="#certifications" class="mobile-link hover:text-blue-400">Credentials</a>
+                <a href="mailto:adityachitoshiya12@gmail.com" class="mobile-link text-blue-400 font-bold">Let's Talk</a>
+            </div>
         </div>
     </nav>
 
     <!-- Hero Section (Mobile Optimized) -->
-    <section class="relative min-h-[100dvh] flex flex-col justify-center items-center text-center px-6 overflow-hidden">
+    <section
+        class="relative min-h-[100dvh] flex flex-col justify-center items-center text-center px-4 md:px-6 overflow-hidden pt-20 md:pt-0">
         <!-- 3D Background -->
         <div id="webgl-container" class="absolute inset-0 z-0 opacity-40"></div>
 
-        <div class="relative z-10 max-w-7xl mx-auto mt-16 md:mt-0 w-full">
+        <div class="relative z-10 max-w-7xl mx-auto w-full">
             <div
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-md mb-6 md:mb-8 hover-trigger reveal cursor-none">
+                class="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-md mb-6 md:mb-8 hover-trigger reveal cursor-none">
                 <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                <span class="text-[10px] md:text-xs font-mono text-blue-300 uppercase tracking-wider">Founder @ Varaha
+                <span class="text-[10px] md:text-xs font-mono text-blue-300 uppercase tracking-wider">Designer @ Varaha
                     Labs</span>
             </div>
 
             <h1
-                class="display-font text-4xl xs:text-5xl sm:text-7xl md:text-9xl font-black leading-[1] mb-6 md:mb-8 reveal mix-blend-overlay">
-                DESIGN <br>
+                class="display-font text-5xl sm:text-7xl md:text-9xl font-black leading-[0.95] mb-6 md:mb-8 reveal mix-blend-overlay">
+                CREATIVE <br>
                 <!-- GLITCH EFFECT WRAPPER -->
                 <span class="glitch-wrapper hover-trigger">
                     <span class="text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-600 glitch-text"
@@ -461,7 +494,7 @@
             </h1>
 
             <p
-                class="text-base sm:text-lg md:text-2xl text-gray-400 font-light max-w-3xl mx-auto mb-8 md:mb-12 reveal leading-relaxed">
+                class="text-base sm:text-lg md:text-2xl text-gray-400 font-light max-w-3xl mx-auto mb-8 md:mb-12 reveal leading-relaxed px-2 md:px-0">
                 Turning ideas into powerful digital experiences. <br class="hidden md:block">
                 <span class="text-blue-400">Motion</span> • <span class="text-purple-400">CGI</span> • <span
                     class="text-pink-400">AI Systems</span> • <span class="text-white">Brand Strategy</span>
@@ -469,7 +502,7 @@
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center reveal w-full px-4 md:px-8">
                 <a href="#missions"
-                    class="group relative px-6 py-4 bg-white text-black rounded-full font-bold overflow-hidden hover-trigger w-full sm:w-auto text-sm md:text-base cursor-none shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                    class="group relative px-8 py-4 bg-white text-black rounded-full font-bold overflow-hidden hover-trigger w-full sm:w-auto text-sm md:text-base cursor-none shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                     <span class="relative z-10 flex items-center justify-center gap-2">Access Missions <i
                             data-lucide="folder-open" class="w-4 h-4"></i></span>
                     <div
@@ -503,7 +536,7 @@
     </section>
 
     <!-- MISSION FILES (Replaces Standard Portfolio) -->
-    <section id="missions" class="py-24 md:py-32 px-4 md:px-8 bg-[#080808] relative">
+    <section id="missions" class="py-20 md:py-32 px-4 md:px-8 bg-[#080808] relative">
         <div
             class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5">
         </div>
@@ -524,7 +557,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
 
                 <!-- Mission 1: Regrip -->
                 <div class="mission-folder group reveal hover-trigger cursor-pointer">
@@ -538,15 +571,17 @@
                             <div class="flex justify-between items-end border-b border-white/20 pb-4 mb-4">
                                 <div>
                                     <span class="text-blue-500 font-mono text-xs">CASE #001</span>
-                                    <h3 class="text-2xl font-bold text-white mt-1">REGRIP REBRAND</h3>
+                                    <h3 class="text-xl md:text-2xl font-bold text-white mt-1">REGRIP REBRAND</h3>
                                 </div>
                                 <i data-lucide="file-text"
                                     class="w-6 h-6 text-gray-500 group-hover:text-white transition-colors"></i>
                             </div>
                             <div class="h-0 group-hover:h-auto overflow-hidden transition-all duration-500">
-                                <p class="text-gray-400 text-sm font-mono mb-2">> OBJECTIVE: Complete Brand Overhaul</p>
-                                <p class="text-gray-400 text-sm font-mono mb-2">> STATUS: Success (40% Growth)</p>
-                                <p class="text-gray-400 text-sm font-mono">> ASSETS: Logo, Strategy, UI</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> OBJECTIVE: Complete Brand
+                                    Overhaul</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> STATUS: Success (40%
+                                    Growth)</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono">> ASSETS: Logo, Strategy, UI</p>
                             </div>
                         </div>
                     </div>
@@ -564,14 +599,16 @@
                             <div class="flex justify-between items-end border-b border-white/20 pb-4 mb-4">
                                 <div>
                                     <span class="text-purple-500 font-mono text-xs">CASE #002</span>
-                                    <h3 class="text-2xl font-bold text-white mt-1">NEON INTERFACE</h3>
+                                    <h3 class="text-xl md:text-2xl font-bold text-white mt-1">NEON INTERFACE</h3>
                                 </div>
                                 <i data-lucide="file-code"
                                     class="w-6 h-6 text-gray-500 group-hover:text-white transition-colors"></i>
                             </div>
                             <div class="h-0 group-hover:h-auto overflow-hidden transition-all duration-500">
-                                <p class="text-gray-400 text-sm font-mono mb-2">> OBJECTIVE: Next-Gen UI/UX</p>
-                                <p class="text-gray-400 text-sm font-mono mb-2">> TECH: WebGL, React, Three.js</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> OBJECTIVE: Next-Gen UI/UX
+                                </p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> TECH: WebGL, React,
+                                    Three.js</p>
                             </div>
                         </div>
                     </div>
@@ -589,14 +626,16 @@
                             <div class="flex justify-between items-end border-b border-white/20 pb-4 mb-4">
                                 <div>
                                     <span class="text-pink-500 font-mono text-xs">CASE #003</span>
-                                    <h3 class="text-2xl font-bold text-white mt-1">VIRAL PROTOCOL</h3>
+                                    <h3 class="text-xl md:text-2xl font-bold text-white mt-1">VIRAL PROTOCOL</h3>
                                 </div>
                                 <i data-lucide="share-2"
                                     class="w-6 h-6 text-gray-500 group-hover:text-white transition-colors"></i>
                             </div>
                             <div class="h-0 group-hover:h-auto overflow-hidden transition-all duration-500">
-                                <p class="text-gray-400 text-sm font-mono mb-2">> OBJECTIVE: Mass Audience Reach</p>
-                                <p class="text-gray-400 text-sm font-mono mb-2">> TARGETS: 10M+ Views Achieved</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> OBJECTIVE: Mass Audience
+                                    Reach</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> TARGETS: 10M+ Views
+                                    Achieved</p>
                             </div>
                         </div>
                     </div>
@@ -614,14 +653,16 @@
                             <div class="flex justify-between items-end border-b border-white/20 pb-4 mb-4">
                                 <div>
                                     <span class="text-green-500 font-mono text-xs">CASE #004</span>
-                                    <h3 class="text-2xl font-bold text-white mt-1">NEURAL SYSTEMS</h3>
+                                    <h3 class="text-xl md:text-2xl font-bold text-white mt-1">NEURAL SYSTEMS</h3>
                                 </div>
                                 <i data-lucide="cpu"
                                     class="w-6 h-6 text-gray-500 group-hover:text-white transition-colors"></i>
                             </div>
                             <div class="h-0 group-hover:h-auto overflow-hidden transition-all duration-500">
-                                <p class="text-gray-400 text-sm font-mono mb-2">> OBJECTIVE: AI Workflow Automation</p>
-                                <p class="text-gray-400 text-sm font-mono mb-2">> TECH: Python, TensorFlow, GPT-4</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> OBJECTIVE: AI Workflow
+                                    Automation</p>
+                                <p class="text-gray-400 text-xs md:text-sm font-mono mb-2">> TECH: Python, TensorFlow,
+                                    GPT-4</p>
                             </div>
                         </div>
                     </div>
@@ -632,9 +673,9 @@
     </section>
 
     <!-- The Stack (Intel) -->
-    <section id="skills" class="py-24 bg-[#050505] border-y border-white/5">
+    <section id="skills" class="py-20 md:py-24 bg-[#050505] border-y border-white/5">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16">
 
                 <!-- Tech Stack -->
                 <div class="gsap-reveal">
@@ -739,11 +780,31 @@
     <script>
         lucide.createIcons();
 
+        // Mobile Menu Toggle Logic
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+        }
+
         // Preloader
         window.addEventListener('load', () => {
             setTimeout(() => {
-                document.getElementById('preloader').classList.add('hidden');
-                document.body.classList.remove('loading');
+                const preloader = document.getElementById('preloader');
+                if (preloader) {
+                    preloader.classList.add('hidden');
+                    document.body.classList.remove('loading');
+                }
 
                 // Init Scroll Animations
                 gsap.registerPlugin(ScrollTrigger);

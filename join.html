@@ -18,7 +18,7 @@
     <!-- Firebase Connection Script -->
     <script type="module">
         // Firebase SDKs import
-        import { signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // Import initialized instances
@@ -29,13 +29,68 @@
 
         let currentUser = null;
 
-        // 1. Authentication Logic (Auto Login)
+        // 1. Authentication Logic (Auto Login & Google Login)
+        const provider = new GoogleAuthProvider();
+
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const googleBtnText = document.getElementById('google-btn-text');
+        const authSection = document.getElementById('auth-section');
+        const userProfile = document.getElementById('user-profile');
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        const userEmail = document.getElementById('user-email');
+
+        // Google Login Function
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener('click', () => {
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        // This gives you a Google Access Token. You can use it to access the Google API.
+                        const credential = GoogleAuthProvider.credentialFromResult(result);
+                        const token = credential.accessToken;
+                        // The signed-in user info.
+                        const user = result.user;
+                        console.log("Google User:", user);
+                    }).catch((error) => {
+                        // Handle Errors here.
+                        const errorCode = error.code;
+                        const errorMessage = error.message;
+                        console.error("Google Login Error:", errorCode, errorMessage);
+                        alert("Google Login Failed: " + errorMessage);
+                    });
+            });
+        }
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 console.log("User Connected ID:", user.uid);
+
+                // If user is not anonymous (meaning they logged in via Google or other provider)
+                if (!user.isAnonymous) {
+                    // Update UI to show logged in state
+                    if (authSection) authSection.classList.add('hidden');
+                    if (userProfile) {
+                        userProfile.classList.remove('hidden');
+                        if (user.photoURL) userAvatar.src = user.photoURL;
+                        if (user.displayName) userName.textContent = user.displayName;
+                        if (user.email) userEmail.textContent = user.email;
+
+                        // Auto-fill form fields
+                        const nameInput = document.getElementById('name');
+                        const emailInput = document.getElementById('email');
+                        if (nameInput && !nameInput.value) nameInput.value = user.displayName || '';
+                        if (emailInput && !emailInput.value) emailInput.value = user.email || '';
+                    }
+                }
+
             } else {
+                // Fallback to anonymous login if not logged in
                 signInAnonymously(auth).catch((error) => console.error("Login Failed:", error));
+
+                // Reset UI
+                if (authSection) authSection.classList.remove('hidden');
+                if (userProfile) userProfile.classList.add('hidden');
             }
         });
 
@@ -84,6 +139,7 @@
                     meta: {
                         timestamp: serverTimestamp(), // Server ka time
                         userId: currentUser.uid,      // User ki ID
+                        authProvider: currentUser.isAnonymous ? 'anonymous' : 'google',
                         status: 'new'
                     }
                 };
@@ -273,7 +329,7 @@
                     <span class="text-xs font-mono text-green-400 uppercase tracking-widest">Recruitment Protocol
                         Active</span>
                 </div>
-                <h1 class="text-4xl md:text-6xl font-black text-white mb-4 brand-font">JOIN THE <span
+                <h1 class="text-3xl md:text-6xl font-black text-white mb-4 brand-font">JOIN THE <span
                         class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">NETWORK</span>
                 </h1>
                 <p class="text-gray-400 max-w-xl mx-auto text-lg">
@@ -297,10 +353,53 @@
             </div>
 
             <!-- Form Container -->
-            <div id="form-container" class="glass-panel rounded-2xl p-8 md:p-12 relative overflow-hidden">
+            <div id="form-container" class="glass-panel rounded-2xl p-4 md:p-12 relative overflow-hidden">
                 <div class="scan-line"></div>
 
                 <form id="application-form" class="space-y-8">
+
+                    <!-- Auth Section -->
+                    <div class="mb-8">
+                        <!-- Login Button -->
+                        <div id="auth-section" class="text-center">
+                            <button type="button" id="google-login-btn"
+                                class="inline-flex items-center gap-3 px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all transform hover:scale-105">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                    <path
+                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                        fill="#4285F4" />
+                                    <path
+                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                        fill="#34A853" />
+                                    <path
+                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                        fill="#FBBC05" />
+                                    <path
+                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                        fill="#EA4335" />
+                                </svg>
+                                <span id="google-btn-text">Sign in with Google</span>
+                            </button>
+                            <p class="text-xs text-gray-500 mt-3">Sign in to auto-fill your details</p>
+                        </div>
+
+                        <!-- User Profile (Hidden by default) -->
+                        <div id="user-profile"
+                            class="hidden flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
+                            <div class="flex items-center gap-4">
+                                <img id="user-avatar" src="" alt="User"
+                                    class="w-10 h-10 rounded-full border border-white/20">
+                                <div>
+                                    <h4 id="user-name" class="text-white font-bold text-sm">User Name</h4>
+                                    <p id="user-email" class="text-gray-400 text-xs">user@example.com</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 text-green-400 text-xs font-mono">
+                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                VERIFIED
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Section 1: Identity -->
                     <div>
