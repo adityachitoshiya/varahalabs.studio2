@@ -11,159 +11,145 @@
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'%3E%3C/path%3E%3C/svg%3E">
 
+    <!-- Tailwind CSS Script -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icons & Animations -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-    <!-- Firebase Connection Script -->
+    <!-- Firebase SDKs -->
     <script type="module">
-        // Firebase SDKs import
-        import { signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { app, auth, db } from './Database.js';
 
-        // Import initialized instances
-        import { auth, db } from './Database.js';
-
-        // App ID (Data ko sahi jagah save karne ke liye)
         const appId = window.__app_id || 'default-app-id';
-
         let currentUser = null;
-
-        // 1. Authentication Logic (Auto Login & Google Login)
-        const provider = new GoogleAuthProvider();
-
-        const googleLoginBtn = document.getElementById('google-login-btn');
-        const googleBtnText = document.getElementById('google-btn-text');
-        const authSection = document.getElementById('auth-section');
-        const userProfile = document.getElementById('user-profile');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const userEmail = document.getElementById('user-email');
-
-        // Google Login Function
-        if (googleLoginBtn) {
-            googleLoginBtn.addEventListener('click', () => {
-                signInWithPopup(auth, provider)
-                    .then((result) => {
-                        // This gives you a Google Access Token. You can use it to access the Google API.
-                        const credential = GoogleAuthProvider.credentialFromResult(result);
-                        const token = credential.accessToken;
-                        // The signed-in user info.
-                        const user = result.user;
-                        console.log("Google User:", user);
-                    }).catch((error) => {
-                        // Handle Errors here.
-                        const errorCode = error.code;
-                        const errorMessage = error.message;
-                        console.error("Google Login Error:", errorCode, errorMessage);
-                        alert("Google Login Failed: " + errorMessage);
-                    });
-            });
-        }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                console.log("User Connected ID:", user.uid);
-
-                // If user is not anonymous (meaning they logged in via Google or other provider)
-                if (!user.isAnonymous) {
-                    // Update UI to show logged in state
-                    if (authSection) authSection.classList.add('hidden');
-                    if (userProfile) {
-                        userProfile.classList.remove('hidden');
-                        if (user.photoURL) userAvatar.src = user.photoURL;
-                        if (user.displayName) userName.textContent = user.displayName;
-                        if (user.email) userEmail.textContent = user.email;
-
-                        // Auto-fill form fields
-                        const nameInput = document.getElementById('name');
-                        const emailInput = document.getElementById('email');
-                        if (nameInput && !nameInput.value) nameInput.value = user.displayName || '';
-                        if (emailInput && !emailInput.value) emailInput.value = user.email || '';
-                    }
+                const statusDot = document.getElementById('connection-status-dot');
+                const statusText = document.getElementById('connection-status-text');
+                if (statusDot && statusText) {
+                    statusDot.classList.remove('bg-red-500');
+                    statusDot.classList.add('bg-green-500', 'animate-pulse');
+                    statusText.innerText = "UPLINK SECURE";
+                    statusText.classList.add('text-green-400');
                 }
-
             } else {
-                // Fallback to anonymous login if not logged in
-                signInAnonymously(auth).catch((error) => console.error("Login Failed:", error));
-
-                // Reset UI
-                if (authSection) authSection.classList.remove('hidden');
-                if (userProfile) userProfile.classList.add('hidden');
+                signInAnonymously(auth).catch((error) => console.error("Connection Failed:", error));
             }
         });
 
-        // 2. Form Submission Logic
-        const applicationForm = document.getElementById('application-form');
-        const successMessage = document.getElementById('success-message');
-        const formContainer = document.getElementById('form-container');
+        // Toggle between forms
+        const btnTalent = document.getElementById('btn-talent');
+        const btnClient = document.getElementById('btn-client');
+        const formTalent = document.getElementById('talent-application-form');
+        const formClient = document.getElementById('client-project-form');
 
-        if (applicationForm) {
-            applicationForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); // Page reload hone se rokna
+        if (btnTalent && btnClient && formTalent && formClient) {
+            btnTalent.addEventListener('click', () => {
+                btnTalent.classList.add('bg-green-500/20', 'text-green-400', 'border-green-500/50');
+                btnTalent.classList.remove('border-transparent', 'text-gray-500');
 
-                if (!currentUser) {
-                    alert("Connection establishing... please wait.");
-                    return;
-                }
+                btnClient.classList.remove('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
+                btnClient.classList.add('text-gray-500', 'border-transparent');
 
-                // Button loading state
-                const submitBtn = document.getElementById('submit-btn');
-                const btnText = document.getElementById('btn-text');
-                const btnIcon = document.getElementById('btn-icon');
+                formTalent.classList.remove('hidden');
+                formClient.classList.add('hidden');
 
-                submitBtn.disabled = true;
-                btnText.textContent = "SENDING DATA...";
-                btnIcon.classList.add('hidden');
-                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                gsap.fromTo(formTalent, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 });
+            });
 
-                // Form se data collect karna
+            btnClient.addEventListener('click', () => {
+                btnClient.classList.add('bg-blue-500/20', 'text-blue-400', 'border-blue-500/50');
+                btnClient.classList.remove('border-transparent', 'text-gray-500');
+
+                btnTalent.classList.remove('bg-green-500/20', 'text-green-400', 'border-green-500/50');
+                btnTalent.classList.add('text-gray-500', 'border-transparent');
+
+                formClient.classList.remove('hidden');
+                formTalent.classList.add('hidden');
+
+                gsap.fromTo(formClient, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 });
+            });
+        }
+
+        // Handle Talent Form
+        const talentForm = document.getElementById('talent-application-form');
+        if (talentForm) {
+            talentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) { alert("Connection initializing..."); return; }
+
+                const btn = document.getElementById('talent-submit-btn');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "UPLOADING...";
+                btn.classList.add('opacity-70', 'cursor-wait');
+
                 const formData = {
-                    personal: {
-                        name: document.getElementById('name').value,
-                        email: document.getElementById('email').value,
-                        phone: document.getElementById('phone').value,
-                        location: document.getElementById('location').value,
-                    },
-                    professional: {
-                        role: document.getElementById('role').value,
-                        experience: document.getElementById('experience').value,
-                        portfolio: document.getElementById('portfolio').value,
-                        linkedin: document.getElementById('linkedin').value,
-                    },
-                    insights: {
-                        superpower: document.getElementById('superpower').value,
-                        whyVaraha: document.getElementById('why-varaha').value,
-                    },
-                    meta: {
-                        timestamp: serverTimestamp(), // Server ka time
-                        userId: currentUser.uid,      // User ki ID
-                        authProvider: currentUser.isAnonymous ? 'anonymous' : 'google',
-                        status: 'new'
-                    }
+                    type: 'freelancer',
+                    name: document.getElementById('talent-name').value,
+                    email: document.getElementById('talent-email').value,
+                    role: document.getElementById('talent-role').value,
+                    portfolio: document.getElementById('talent-portfolio').value,
+                    timestamp: serverTimestamp(),
+                    userId: currentUser.uid
                 };
 
                 try {
-                    // 3. Data Save Karna (Firestore)
-                    // Hum 'freelance_applications' naam ke collection mein data daal rahe hain
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'freelance_applications'), formData);
-
-                    // Success Animation
-                    gsap.to(formContainer, { opacity: 0, y: -20, duration: 0.5, display: 'none' });
-                    successMessage.classList.remove('hidden');
-                    gsap.fromTo(successMessage, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5 });
-
-                    applicationForm.reset();
+                    alert("Application Sent! Welcome to the network.");
+                    talentForm.reset();
                 } catch (error) {
-                    console.error("Data Save Error: ", error);
-                    alert("Error saving data. Please try again.");
+                    console.error(error);
+                    alert("Failed to send.");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                    btn.classList.remove('opacity-70', 'cursor-wait');
+                }
+            });
+        }
 
-                    // Reset Button if error
-                    submitBtn.disabled = false;
-                    btnText.textContent = "INITIATE APPLICATION";
-                    btnIcon.classList.remove('hidden');
-                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+        // Handle Client Form
+        const clientForm = document.getElementById('client-project-form');
+        if (clientForm) {
+            clientForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) { alert("Connection initializing..."); return; }
+
+                const btn = document.getElementById('client-submit-btn');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "TRANSMITTING...";
+                btn.classList.add('opacity-70', 'cursor-wait');
+
+                const formData = {
+                    type: 'client',
+                    company: document.getElementById('client-company').value,
+                    email: document.getElementById('client-email').value,
+                    projectType: document.getElementById('client-project-type').value,
+                    budget: document.getElementById('client-budget').value,
+                    details: document.getElementById('client-details').value,
+                    timestamp: serverTimestamp(),
+                    userId: currentUser.uid
+                };
+
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'project_inquiries'), formData);
+                    alert("Project Inquiry Sent! We will contact you shortly.");
+                    clientForm.reset();
+                } catch (error) {
+                    console.error(error);
+                    alert("Failed to send.");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                    btn.classList.remove('opacity-70', 'cursor-wait');
                 }
             });
         }
@@ -177,6 +163,8 @@
             background-color: #050505;
             color: #e2e8f0;
             overflow-x: hidden;
+            /* Hide default cursor for custom one */
+            cursor: none;
         }
 
         h1,
@@ -186,44 +174,60 @@
             font-family: 'Orbitron', sans-serif;
         }
 
-        /* Form Styles */
+        /* Autofill Fix */
+        input:-webkit-autofill,
+        textarea:-webkit-autofill,
+        select:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 30px #0f1014 inset !important;
+            -webkit-text-fill-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Custom Input Styles */
         .input-group {
             position: relative;
+            margin-bottom: 1.5rem;
         }
 
         .input-field {
             width: 100%;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(15, 16, 20, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px 16px;
+            border-radius: 12px;
+            padding: 16px 20px;
             color: white;
             font-family: 'Rajdhani', sans-serif;
             font-size: 1rem;
             transition: all 0.3s ease;
+            letter-spacing: 0.02em;
+            /* Restore text cursor inside inputs */
+            cursor: text;
         }
 
         .input-field:focus {
             outline: none;
             border-color: #3b82f6;
-            background: rgba(59, 130, 246, 0.05);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+            background: rgba(15, 16, 20, 0.9);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
         }
 
         .input-label {
             display: block;
             font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.15em;
             color: #94a3b8;
-            margin-bottom: 6px;
-            font-weight: 600;
+            margin-bottom: 8px;
+            font-weight: 700;
+            margin-left: 4px;
         }
 
         /* Glass Panel */
         .glass-panel {
-            background: rgba(20, 20, 30, 0.6);
+            background: rgba(20, 20, 30, 0.4);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
@@ -235,7 +239,7 @@
                 linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
         }
 
-        /* Animations */
+        /* Scanline Animation */
         @keyframes scan {
             0% {
                 top: 0%;
@@ -265,6 +269,7 @@
             background: linear-gradient(to right, transparent, #3b82f6, transparent);
             animation: scan 3s linear infinite;
             pointer-events: none;
+            z-index: 10;
         }
 
         /* Custom Scrollbar */
@@ -281,18 +286,76 @@
             border-radius: 10px;
         }
 
-        /* Form Autofill Fix */
-        input:-webkit-autofill,
-        textarea:-webkit-autofill,
-        select:-webkit-autofill {
-            -webkit-box-shadow: 0 0 0 30px #111827 inset !important;
-            -webkit-text-fill-color: white !important;
-            transition: background-color 5000s ease-in-out 0s;
+        /* --- CUSTOM CURSOR STYLES --- */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 10001;
+            pointer-events: none;
+            display: none;
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            body {
+                cursor: none;
+            }
+
+            .cursor-dot,
+            .cursor-outline {
+                display: block !important;
+            }
+        }
+
+        body.hovering .cursor-outline {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: transparent;
+            backdrop-filter: invert(1);
+        }
+
+        /* Restore standard cursor for inputs and buttons */
+        button,
+        a,
+        select,
+        input,
+        textarea {
+            cursor: pointer;
+        }
+
+        input,
+        textarea {
+            cursor: text;
         }
     </style>
 </head>
 
 <body class="antialiased selection:bg-green-500 selection:text-white">
+
+    <!-- CUSTOM CURSOR ELEMENTS -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <div class="fixed inset-0 bg-grid opacity-30 pointer-events-none z-0"></div>
 
     <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -304,225 +367,198 @@
                     <span class="brand-font text-lg font-bold text-white tracking-wider">BACK TO <span
                             class="text-blue-500">BASE</span></span>
                 </a>
+
+                <!-- Connection Status Indicator -->
+                <div class="flex items-center gap-2 border border-white/10 rounded-full px-3 py-1 bg-black/50">
+                    <div id="connection-status-dot" class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span id="connection-status-text"
+                        class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Connecting...</span>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <section class="min-h-screen pt-32 pb-20 px-4 relative overflow-hidden">
-        <!-- Background Elements -->
-        <div class="fixed inset-0 bg-grid opacity-30 pointer-events-none"></div>
+    <section class="min-h-screen pt-32 pb-20 px-4 relative overflow-hidden flex items-center justify-center">
+        <!-- Background Blobs -->
         <div
-            class="fixed top-1/4 right-0 w-[500px] h-[500px] bg-green-600/10 rounded-full blur-[150px] pointer-events-none">
+            class="fixed top-1/4 right-0 w-[500px] h-[500px] bg-green-600/05 rounded-full blur-[150px] pointer-events-none z-0">
         </div>
         <div
-            class="fixed bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none">
+            class="fixed bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/05 rounded-full blur-[150px] pointer-events-none z-0">
         </div>
 
-        <div class="max-w-4xl mx-auto relative z-10">
+        <div class="max-w-4xl w-full relative z-10">
 
             <!-- Header -->
-            <div class="text-center mb-12">
-                <div
-                    class="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-green-500/30 bg-green-500/10 backdrop-blur-md mb-6">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span class="text-xs font-mono text-green-400 uppercase tracking-widest">Recruitment Protocol
-                        Active</span>
-                </div>
-                <h1 class="text-3xl md:text-6xl font-black text-white mb-4 brand-font">JOIN THE <span
-                        class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">NETWORK</span>
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-6xl font-black text-white mb-4 brand-font">ACCESS <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">PORTAL</span>
                 </h1>
-                <p class="text-gray-400 max-w-xl mx-auto text-lg">
-                    We are looking for elite designers, developers, and visionaries. <br>
-                    Fill out the manifest below to initialize your application.
-                </p>
+                <p class="text-gray-400 max-w-xl mx-auto text-lg">Secure Entry Point for Talent & Clients.</p>
             </div>
 
-            <!-- Success Message (Hidden by default) -->
-            <div id="success-message" class="hidden glass-panel p-12 rounded-2xl text-center border-green-500/50">
-                <div
-                    class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50">
-                    <i data-lucide="check" class="w-10 h-10 text-green-400"></i>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-4 brand-font">TRANSMISSION RECEIVED</h2>
-                <p class="text-gray-300 mb-8">Your profile has been encrypted and uploaded to our secure server. Our
-                    recruitment AI will analyze your data. Stand by for contact.</p>
-                <a href="index.html"
-                    class="inline-block px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors">Return
-                    to Base</a>
+            <!-- TOGGLE SWITCH -->
+            <div class="flex justify-center gap-4 mb-10">
+                <button id="btn-talent"
+                    class="px-6 py-3 rounded-xl border border-green-500/50 bg-green-500/20 text-green-400 font-bold transition-all hover:bg-green-500/30 hover:scale-105">
+                    JOIN TEAM (TALENT)
+                </button>
+                <button id="btn-client"
+                    class="px-6 py-3 rounded-xl border border-transparent bg-white/5 text-gray-500 font-bold transition-all hover:text-blue-400 hover:bg-blue-500/10">
+                    HIRE US (CLIENT)
+                </button>
             </div>
 
             <!-- Form Container -->
-            <div id="form-container" class="glass-panel rounded-2xl p-4 md:p-12 relative overflow-hidden">
+            <div id="form-container"
+                class="glass-panel rounded-3xl p-8 md:p-12 relative overflow-hidden border-t border-white/10">
                 <div class="scan-line"></div>
 
-                <form id="application-form" class="space-y-8">
+                <!-- TALENT FORM -->
+                <form id="talent-application-form" class="space-y-6" autocomplete="off">
+                    <div
+                        class="text-green-400 font-mono text-xs uppercase tracking-widest mb-6 border-b border-green-500/20 pb-2">
+                        >> INITIATING RECRUITMENT PROTOCOL</div>
 
-                    <!-- Auth Section -->
-                    <div class="mb-8">
-                        <!-- Login Button -->
-                        <div id="auth-section" class="text-center">
-                            <button type="button" id="google-login-btn"
-                                class="inline-flex items-center gap-3 px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all transform hover:scale-105">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                                    <path
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                        fill="#4285F4" />
-                                    <path
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                        fill="#34A853" />
-                                    <path
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                        fill="#FBBC05" />
-                                    <path
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                        fill="#EA4335" />
-                                </svg>
-                                <span id="google-btn-text">Sign in with Google</span>
-                            </button>
-                            <p class="text-xs text-gray-500 mt-3">Sign in to auto-fill your details</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label class="input-label" for="talent-name">Full Codename (Name)</label>
+                            <input type="text" id="talent-name" required
+                                class="input-field border-green-500/30 focus:border-green-500"
+                                placeholder="e.g. Aditya Kumar">
                         </div>
-
-                        <!-- User Profile (Hidden by default) -->
-                        <div id="user-profile"
-                            class="hidden flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div class="flex items-center gap-4">
-                                <img id="user-avatar" src="" alt="User"
-                                    class="w-10 h-10 rounded-full border border-white/20">
-                                <div>
-                                    <h4 id="user-name" class="text-white font-bold text-sm">User Name</h4>
-                                    <p id="user-email" class="text-gray-400 text-xs">user@example.com</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 text-green-400 text-xs font-mono">
-                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                VERIFIED
-                            </div>
+                        <div class="input-group">
+                            <label class="input-label" for="talent-email">Comms Link (Email)</label>
+                            <input type="email" id="talent-email" required
+                                class="input-field border-green-500/30 focus:border-green-500"
+                                placeholder="e.g. contact@domain.com">
                         </div>
                     </div>
 
-                    <!-- Section 1: Identity -->
-                    <div>
-                        <h3
-                            class="text-blue-400 font-bold uppercase tracking-widest text-xs mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
-                            <i data-lucide="user" class="w-4 h-4"></i> Identity Protocol
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="input-group">
-                                <label class="input-label" for="name">Full Codename (Name)*</label>
-                                <input type="text" id="name" required class="input-field" placeholder="John Doe">
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="email">Comms Link (Email)*</label>
-                                <input type="email" id="email" required class="input-field"
-                                    placeholder="john@example.com">
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="phone">Signal Frequency (Phone)</label>
-                                <input type="tel" id="phone" class="input-field" placeholder="+91 98765 43210">
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="location">Base Location</label>
-                                <input type="text" id="location" class="input-field" placeholder="City, Country">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 2: Capability -->
-                    <div>
-                        <h3
-                            class="text-purple-400 font-bold uppercase tracking-widest text-xs mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
-                            <i data-lucide="cpu" class="w-4 h-4"></i> Capability Matrix
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div class="input-group">
-                                <label class="input-label" for="role">Primary Class (Role)*</label>
-                                <select id="role" required class="input-field appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Select Specialization</option>
-                                    <option value="developer_frontend">Frontend Developer</option>
-                                    <option value="developer_backend">Backend Developer</option>
-                                    <option value="developer_fullstack">Full Stack Developer</option>
-                                    <option value="designer_uiux">UI/UX Designer</option>
-                                    <option value="designer_motion">Motion Graphic Designer</option>
-                                    <option value="artist_3d">3D / CGI Artist</option>
-                                    <option value="specialist_ai">AI / ML Specialist</option>
-                                    <option value="strategy_marketing">Marketing Strategist</option>
-                                    <option value="content_creator">Content Creator</option>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label class="input-label" for="talent-role">Specialization</label>
+                            <div class="relative">
+                                <select id="talent-role"
+                                    class="input-field border-green-500/30 focus:border-green-500 appearance-none">
+                                    <option>Motion Graphics</option>
+                                    <option>UI/UX Design</option>
+                                    <option>Full Stack Dev</option>
+                                    <option>AI Specialist</option>
                                 </select>
                                 <i data-lucide="chevron-down"
-                                    class="absolute right-4 top-9 text-gray-500 w-4 h-4 pointer-events-none"></i>
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="experience">Combat Experience (Years)*</label>
-                                <input type="number" id="experience" required min="0" max="50" class="input-field"
-                                    placeholder="e.g. 3">
+                                    class="absolute right-4 top-4 text-gray-500 w-4 h-4 pointer-events-none"></i>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 gap-6">
-                            <div class="input-group">
-                                <label class="input-label" for="portfolio">Proof of Work (Portfolio/GitHub)*</label>
-                                <div class="relative">
-                                    <i data-lucide="link" class="absolute left-4 top-3.5 text-gray-500 w-4 h-4"></i>
-                                    <input type="url" id="portfolio" required class="input-field pl-10"
-                                        placeholder="https://behance.net/yourprofile">
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="linkedin">Professional Network (LinkedIn)</label>
-                                <div class="relative">
-                                    <i data-lucide="linkedin" class="absolute left-4 top-3.5 text-gray-500 w-4 h-4"></i>
-                                    <input type="url" id="linkedin" class="input-field pl-10"
-                                        placeholder="https://linkedin.com/in/yourprofile">
-                                </div>
-                            </div>
+                        <div class="input-group">
+                            <label class="input-label" for="talent-portfolio">Proof of Work (Link)</label>
+                            <input type="url" id="talent-portfolio" required
+                                class="input-field border-green-500/30 focus:border-green-500"
+                                placeholder="https://behance.net/...">
                         </div>
                     </div>
 
-                    <!-- Section 3: Intel -->
-                    <div>
-                        <h3
-                            class="text-green-400 font-bold uppercase tracking-widest text-xs mb-6 border-b border-white/10 pb-2 flex items-center gap-2">
-                            <i data-lucide="brain-circuit" class="w-4 h-4"></i> Intel & Analysis
-                        </h3>
-                        <div class="space-y-6">
-                            <div class="input-group">
-                                <label class="input-label" for="superpower">What is your 'Superpower'?*</label>
-                                <p class="text-xs text-gray-500 mb-2">One thing you do better than 99% of people.</p>
-                                <textarea id="superpower" required rows="2" class="input-field resize-none"
-                                    placeholder="e.g. I can debug code in my sleep..."></textarea>
-                            </div>
-                            <div class="input-group">
-                                <label class="input-label" for="why-varaha">Why Varaha Labs?</label>
-                                <textarea id="why-varaha" rows="3" class="input-field resize-none"
-                                    placeholder="Tell us why you want to join this specific mission..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit -->
                     <div class="pt-4">
-                        <button type="submit" id="submit-btn"
-                            class="group w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-5 rounded-xl transition-all transform hover:scale-[1.01] shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
-                            <span id="btn-text">INITIATE APPLICATION</span>
-                            <i id="btn-icon" data-lucide="send"
-                                class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                        <button type="submit" id="talent-submit-btn"
+                            class="w-full bg-green-600 hover:bg-green-500 text-black font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20">
+                            INITIATE APPLICATION
                         </button>
-                        <p class="text-center text-gray-600 text-xs mt-4">By clicking initiate, you agree to our data
-                            processing protocols.</p>
+                    </div>
+                </form>
+
+                <!-- CLIENT FORM (Hidden by default) -->
+                <form id="client-project-form" class="space-y-6 hidden" autocomplete="off">
+                    <div
+                        class="text-blue-400 font-mono text-xs uppercase tracking-widest mb-6 border-b border-blue-500/20 pb-2">
+                        >> INITIALIZING PROJECT UPLINK</div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label class="input-label" for="client-company">Company / Name</label>
+                            <input type="text" id="client-company" required
+                                class="input-field border-blue-500/30 focus:border-blue-500"
+                                placeholder="e.g. Varaha Corp">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label" for="client-email">Business Email</label>
+                            <input type="email" id="client-email" required
+                                class="input-field border-blue-500/30 focus:border-blue-500"
+                                placeholder="e.g. ceo@varaha.com">
+                        </div>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label class="input-label" for="client-project-type">Project Type</label>
+                            <div class="relative">
+                                <select id="client-project-type"
+                                    class="input-field border-blue-500/30 focus:border-blue-500 appearance-none">
+                                    <option>Brand Identity</option>
+                                    <option>Web/App Development</option>
+                                    <option>Marketing Campaign</option>
+                                    <option>AI Automation</option>
+                                </select>
+                                <i data-lucide="chevron-down"
+                                    class="absolute right-4 top-4 text-gray-500 w-4 h-4 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label" for="client-budget">Est. Budget</label>
+                            <div class="relative">
+                                <select id="client-budget"
+                                    class="input-field border-blue-500/30 focus:border-blue-500 appearance-none">
+                                    <option>$1k - $5k</option>
+                                    <option>$5k - $10k</option>
+                                    <option>$10k - $50k</option>
+                                    <option>$50k+</option>
+                                </select>
+                                <i data-lucide="chevron-down"
+                                    class="absolute right-4 top-4 text-gray-500 w-4 h-4 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" for="client-details">Project Brief</label>
+                        <textarea id="client-details" rows="3"
+                            class="input-field border-blue-500/30 focus:border-blue-500 resize-none"
+                            placeholder="Tell us about your vision..."></textarea>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" id="client-submit-btn"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20">
+                            LAUNCH PROJECT
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-black py-8 border-t border-white/10 text-center">
-        <p class="text-gray-600 text-sm">&copy; 2025 Varaha Labs Studio. Recruitment Portal.</p>
+    <footer class="bg-black py-8 border-t border-white/10 text-center relative z-10">
+        <p class="text-gray-600 text-sm">&copy; 2025 Varaha Labs Studio. Access Portal.</p>
     </footer>
 
     <script>
         lucide.createIcons();
+
+        // Custom Cursor
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+        if (window.matchMedia("(hover: hover)").matches) {
+            window.addEventListener('mousemove', (e) => {
+                const posX = e.clientX; const posY = e.clientY;
+                if (cursorDot) { cursorDot.style.left = `${posX}px`; cursorDot.style.top = `${posY}px`; }
+                if (cursorOutline) cursorOutline.animate({ left: `${posX}px`, top: `${posY}px` }, { duration: 500, fill: "forwards" });
+            });
+            document.querySelectorAll('a, button, .glass-panel, input, select, textarea').forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+            });
+        }
     </script>
 </body>
 
